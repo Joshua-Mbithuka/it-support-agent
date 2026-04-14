@@ -1,0 +1,190 @@
+{
+  "name": "IT Support Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an IT support assistant for {Add Your company}.\n\nCustomer message: {{ $json.chatInput }}\n\nFollow these steps:\n\n1. Use the search_web tool to search Google for a solution to the customer's issue.\n\n2. If you find a clear solution → respond with the solution professionally.\n\n3. If no solution is found → say:\n   \"I was unable to find a solution for your issue. \n   Would you like me to raise a support ticket so a \n   human agent can assist you?\"\n\n4. If the customer agrees to raise a ticket → use the create_ticket tool with:\n   - subject: a short summary of the issue\n   - description: full details of the customer's issue\n  - email: ask the customer for their email if not already provided\n\n5. Once ticket is created → confirm to the customer with the ticket details.\n\nAlways be polite and professional.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        576,
+        0
+      ],
+      "id": "d56d0064-5e14-46ea-9ce8-2be86ef90f32",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-haiku-4-5-20251001",
+          "mode": "list",
+          "cachedResultName": "Claude Haiku 4.5"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        512,
+        176
+      ],
+      "id": "5af6c26e-464e-41d3-8dca-c54e3f2f5460",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "kqnFxe42F0sbwif3",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "google_domain": "google.com"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolSerpApi",
+      "typeVersion": 1,
+      "position": [
+        896,
+        160
+      ],
+      "id": "a68f788e-1e46-40ec-9562-efee5aeb5f62",
+      "name": "SerpAPI",
+      "credentials": {
+        "serpApi": {
+          "id": "i7ewLxeSyh9Wy8QN",
+          "name": "SerpAPI account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        336,
+        0
+      ],
+      "id": "38ed3b82-5898-4a32-89c3-3bf31a0cb1d7",
+      "name": "When chat message received",
+      "webhookId": "6b29154c-cc7d-41aa-9ce1-4890da37d7c7"
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 7
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        656,
+        192
+      ],
+      "id": "81343cfc-98c4-47c6-8f29-2470dfb4dbb5",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Creates a support ticket in Freshservice when the customer agrees to escalate",
+        "method": "POST",
+        "url": "https://[YourDomain].freshservice.com/api/v2/tickets",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"subject\": \"{{ $fromAI('subject', 'A short summary of the customer issue') }}\",\n  \"description\": \"{{ $fromAI('description', 'Full details of the customer issue including steps already tried') }}\",\n  \"email\": \"{{ $fromAI('email', 'The customer email address') }}\",\n  \"priority\": 2,\n  \"status\": 2,\n  \"group_id\": {Your Group ID},\n  \"custom_fields\": {\n    \"system\": \"Other\",\n    \"country\": \"Global\",\n    \"service_provider\": \"Fresh Service\",\n    \"resolutionroot_cause\": \"User Education\",\n    \"priority\": \"P3\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        784,
+        176
+      ],
+      "id": "060f4a52-5154-4f9e-8816-1ec4a51064c0",
+      "name": "create_ticket",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "UtNIGOBjGqcGxxNH",
+          "name": "Unnamed credential"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SerpAPI": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_ticket": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "24c26355-a283-43f6-bc6d-b443336e32ed",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "aec25697cf88519813adb78f6f96a170ea536f923ac08d7e34e9fc91d6d88df0"
+  },
+  "id": "eV84GVn37jSS7fyb",
+  "tags": []
+}
